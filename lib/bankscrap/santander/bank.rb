@@ -14,20 +14,12 @@ module Bankscrap
       ACCOUNT_ENDPOINT = '/SCH_BAMOBI_WS_ENS/ws/BAMOBI_WS_Def_Listener'
       USER_AGENT       = 'ksoap2-android/2.6.0+'
 
-      def initialize(user, password, log: false, debug: false, extra_args: nil)
-        @user = format_user(user)
-        @password = password
-        @log = log
-        @debug = debug
+      def initialize(credentials = {})
         @public_ip = public_ip
 
-        initialize_connection
-
-        default_headers
-
-        login
-
-        super
+        super do
+          default_headers
+        end
       end
 
       # Fetch all the accounts for the given user
@@ -105,13 +97,13 @@ module Bankscrap
 
       # Build an Account object from API data
       def build_account(data)
+        currency = value_at_xpath(data, 'impSaldoActual/DIVISA')
         Account.new(
           bank: self,
           id: value_at_xpath(data, 'comunes/contratoID/NUMERO_DE_CONTRATO'),
           name: value_at_xpath(data, 'comunes/descContrato'),
-          available_balance: value_at_xpath(data, 'importeDispAut/IMPORTE'),
-          balance: value_at_xpath(data, 'impSaldoActual/IMPORTE'),
-          currency: value_at_xpath(data, 'impSaldoActual/DIVISA'),
+          available_balance: money(value_at_xpath(data, 'importeDispAut/IMPORTE'), currency),
+          balance: money(value_at_xpath(data, 'impSaldoActual/IMPORTE'), currency),
           iban: value_at_xpath(data, 'IBAN').tr(' ', ''),
           description: value_at_xpath(data, 'comunes/alias') || value_at_xpath(data, 'comunes/descContrato'),
           contract_id: data.at_xpath('contratoIDViejo').children.to_s
@@ -129,7 +121,6 @@ module Bankscrap
           description: value_at_xpath(data, 'descripcion'),
           effective_date: Date.strptime(value_at_xpath(data, 'fechaValor'), "%Y-%m-%d"),
           # TODO Falta fecha operacion
-          currency: currency,
           balance: balance
         )
       end

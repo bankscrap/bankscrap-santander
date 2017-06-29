@@ -23,12 +23,13 @@ Or install it yourself as:
 ### From terminal
 #### Bank account balance
 
-    $ bankscrap balance Santander --user YOUR_USER --password YOUR_PASSWORD
+    $ bankscrap balance Santander --credentials=user:YOUR_USER password:YOUR_PASSWORD
 
 
 #### Transactions
 
-    $ bankscrap transactions Santander --user YOUR_USER --password YOUR_PASSWORD
+    $ bankscrap transactions Santander --credentials=user:YOUR_USER password:YOUR_PASSWORD
+    $ bankscrap transactions Santander --credentials=user:YOUR_USER password:YOUR_PASSWORD --from dd-mm-yyyy --to dd-mm-yyyy
 
 ---
 

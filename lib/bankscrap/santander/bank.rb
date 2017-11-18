@@ -1,5 +1,6 @@
 require 'bankscrap'
 require 'securerandom'
+require 'open-uri'
 require_relative 'account.rb'
 
 module Bankscrap

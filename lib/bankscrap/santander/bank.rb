@@ -38,6 +38,36 @@ module Bankscrap
         document.xpath('//cuentas/cuenta').map { |data| build_account(data) }
       end
 
+      # Fetch all the cards for the given user
+      #
+      # Should returns an array of Bankscrap::Card objects
+      def fetch_cards
+        log 'fetch_cards'
+
+        headers = { "SOAPAction" => "http://www.isban.es/webservices/BAMOBI/Posglobal/F_bamobi_posicionglobal_lip/internet/BAMOBIPGL/v1/obtenerPosGlobal_LIP" }
+
+        response = with_headers(headers) { post(BASE_ENDPOINT + PRODUCTS_ENDPOINT, fields: xml_products) }
+
+        document = parse_context(response)
+
+        document.xpath('//tarjetas/tarjeta').map { |data| build_card(data) }
+      end
+
+      # Fetch all the loan for the given user
+      #
+      # Should returns an array of Bankscrap::Loan objects
+      def fetch_loans
+        log 'fetch_loans'
+
+        headers = { "SOAPAction" => "http://www.isban.es/webservices/BAMOBI/Posglobal/F_bamobi_posicionglobal_lip/internet/BAMOBIPGL/v1/obtenerPosGlobal_LIP" }
+
+        response = with_headers(headers) { post(BASE_ENDPOINT + PRODUCTS_ENDPOINT, fields: xml_products) }
+
+        document = parse_context(response)
+
+        document.xpath('//prestamos/prestamo').map { |data| build_loan(data) }
+      end
+
       # Fetch transactions for the given account.
       #
       # Account should be a Bankscrap::Account object
@@ -108,6 +138,33 @@ module Bankscrap
           iban: value_at_xpath(data, 'IBAN').tr(' ', ''),
           description: value_at_xpath(data, 'comunes/alias') || value_at_xpath(data, 'comunes/descContrato'),
           contract_id: data.at_xpath('contratoIDViejo').children.to_s
+        )
+      end
+
+      # Build an Card object from API data
+      def build_card(data)
+        currency = value_at_xpath(data, 'impSaldoDispuesto/DIVISA', 'EUR')
+        Card.new(
+          bank: self,
+          id: value_at_xpath(data, 'comunes/contratoID/NUMERO_DE_CONTRATO'),
+          name: value_at_xpath(data, 'comunes/descContrato'),
+          pan: value_at_xpath(data, 'pan'),
+          amount: money(value_at_xpath(data, 'impSaldoDispuesto/IMPORTE'), currency),
+          avaliable: money(value_at_xpath(data, 'impDisponible/IMPORTE'), currency),
+          description: value_at_xpath(data, 'comunes/alias') || value_at_xpath(data, 'comunes/descContrato'),
+          is_credit: data.at_xpath('descTipoTarjeta').children.to_s == "Crédito"
+        )
+      end
+
+      # Build an Loan object from API data
+      def build_loan(data)
+        currency = value_at_xpath(data, 'impSaldoDispuesto/DIVISA')
+        Loan.new(
+          bank: self,
+          id: value_at_xpath(data, 'comunes/contratoID/NUMERO_DE_CONTRATO'),
+          name: value_at_xpath(data, 'comunes/descContrato'),
+          amount: money(value_at_xpath(data, 'impSaldoDispuesto/IMPORTE'), currency),
+          description: value_at_xpath(data, 'comunes/alias') || value_at_xpath(data, 'comunes/descContrato'),
         )
       end
 
@@ -221,7 +278,7 @@ module Bankscrap
 
       def value_at_xpath(node, xpath, default = '')
         value = node.at_xpath(xpath)
-        value ? value.content.strip : default
+        value && !value.content.blank? ? value.content.strip : default
       end
 
       def money(data, currency)

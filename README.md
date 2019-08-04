@@ -1,6 +1,8 @@
 # Bankscrap::Santander
 
-[Bankscrap](https://github.com/bankscrap/bankscrap) adapter for Santander.
+[Bankscrap](https://github.com/bankscrap/bankscrap) adapter for Banco Santander (Spain).
+
+Contact: open an issue or email us at bankscrap@protonmail.com.
 
 ## Installation
 
